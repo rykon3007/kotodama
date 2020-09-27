@@ -4,6 +4,16 @@
 <head>
     <link rel="stylesheet" type="text/css" href="style.css">
     <meta charset="UTF-8">
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-179134234-1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-179134234-1');
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/three@0.116.1/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.116.1/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@0.3.5/lib/three-vrm.min.js"></script>
@@ -35,7 +45,7 @@
         　→既に友達がルームを作っている場合はRoomIDを教えてもらい、ここに入力<br>
         ➃自分のニックネームを入力<br>
         ➄Join!!をクリック。VoiceChat開始<br>
-        <br>        
+        <br>
     </p>
     <div class="f-item">
         <h2 class="col">Avatar</h2>
@@ -206,16 +216,16 @@
                 nickname.disabled = false;
             }, { once: true });
 
-            
+
         });
-        
+
         function pressEnter(code) {
-                //エンターキー押下なら
-                if (13 === code) {
-                    sendTrigger.click();
-                }
+            //エンターキー押下なら
+            if (13 === code) {
+                sendTrigger.click();
             }
-        
+        }
+
     </script>
 </body>
 
