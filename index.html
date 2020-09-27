@@ -143,7 +143,7 @@
 
             room.on('peerJoin', peerId => {
                 messages.textContent += `===${peerId} joined===\n`;
-                room.send(`${nickname.value} Join!!`);
+                room.send(`${nickname.value}；Hi, ${peerId} `);
 
             });
 
