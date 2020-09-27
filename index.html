@@ -139,7 +139,7 @@
 
             room.on('open', () => {
                 messages.textContent += `===You joined===\n`;
-                room.send(`===${nickname.value} joined===\n`);
+                room.send(`${nickname.value} joined!!\n`);
             });
 
             room.on('peerJoin', peerId => {
@@ -151,6 +151,7 @@
 
             room.on('data', ({ data, src }) => {
                 // Show a message sent to the room and who sent
+                src = src.match(/\((.+)\)/)[1] + "："
                 messages.textContent += `${src} ${data}\n`;
             });
 

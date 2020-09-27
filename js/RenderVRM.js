@@ -14,7 +14,6 @@ function setupScene(vrm_parent, avatar_name) {
   window.scene = new THREE.Scene();
   scene.add(new THREE.DirectionalLight(0xffffff));
   new THREE.GLTFLoader().load(
-    //"https://pixiv.github.io/three-vrm/examples/models/three-vrm-girl.vrm",
     `${avatar_name}`,
     initVRM,
     progress => console.log("Loading model...", 100.0 * (progress.loaded / progress.total), "%"),
@@ -36,7 +35,7 @@ async function initVRM(gltf) {
 }
 
 async function setupCamera(videoElement) {
-  const constraints = { video: { width: 320, height: 240 }, audio: true }; // ここ
+  const constraints = { video: { width: 320, height: 240 }, audio: true }; 
   const stream = await navigator.mediaDevices.getUserMedia(constraints);
   let myaudio = stream.getAudioTracks()[0];
   videoElement.srcObject = stream;
@@ -44,7 +43,6 @@ async function setupCamera(videoElement) {
   var kasoucamera = canvas2.captureStream(15);
   kasoucamera.addTrack(myaudio);
 
-  //videoElm.srcObject = kasoucamera;
   // 着信時に相手にカメラ映像を返せるように、グローバル変数に保存しておく
   localStream = kasoucamera;
   return new Promise(resolve => {
