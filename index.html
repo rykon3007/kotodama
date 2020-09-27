@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/three@0.116.1/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.116.1/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@0.3.5/lib/three-vrm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/facemesh"></script>
+    <script src="./js/RenderVRM.js"></script>
+    <!-- <script src="./js/OrbitControls.js"></script> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.6.3/css/all.min.css">
+    <title>avatar-voiceshat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.webrtc.ecl.ntt.com/skyway-latest.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Raleway&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kranky&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+    <h1 id="title-name">KOTODAMA -ver 0.01-
+    </h1>
+    <p>
+        WebRTCと顔認識の技術検証段階です。易しい使用を推奨します。<br>
+        【VoiceChatの始め方】<br>
+        ➀ アバターを選択する<br>
+        ➁ web cameraを見つめて、ちょっと待つ<br>
+        　→完了するとアバターと自分の顔の動きが同期します。<br>
+        ➂ Room iDを入力<br>
+        　→新規Room作成の場合は自分で適当に設定<br>
+        　→既に友達がルームを作っている場合はRoomIDを教えてもらい、ここに入力<br>
+        ➃自分のニックネームを入力<br>
+        ➄Join!!をクリック。VoiceChat開始<br>
+        <br>        
+    </p>
+    <div class="f-item">
+        <h2 class="col">Avatar</h2>
+        <div class="cp_ipselect cp_sl04">
+            <select id="avatar">
+                <option value="models/male.vrm">male</option>
+                <option value="models/female.vrm">female</option>
+                <option value="models/ochiruman-orange.vrm">ochiruman-orange</option>
+                <option value="models/ochiruman-green.vrm">ochiruman-green</option>
+                <option value="models/ochiruman-blue.vrm">ochiruman-blue</option>
+
+            </select>
+        </div>
+    </div>
+    <div id=button-align>
+        <button id="button-effect" onclick="start()">Apply</button>
+    </div>
+    <style>
+        @media screen and (min-width: 644px) {
+            .oneline {
+                width: 966px;
+            }
+        }
+    </style>
+    <audio id="my-audio" autoplay></audio>
+    <div style="display: none;">
+        <h2 class="col">YourID</h2>
+        <p id="my-id"></p>
+    </div>
+    <h2 class="col">VoiceChatRoom</h2>
+    <input type="text" placeholder="Join room..." id="js-room-id">
+    <input type="text" placeholder="Your Name" id="nickname">
+    <button id="js-join-trigger">Join‼</button>
+    <button id="js-leave-trigger">Leave...</button>
+
+    <!-- ここから変更点 -->
+    <div>
+        <input type="text" placeholder="Enter the message" id="js-local-text" onkeypress="pressEnter(event.keyCode);">
+        <button id="js-send-trigger">Send</button>
+    </div>
+    <!-- ここまで変更点 -->
+    <pre class="messages" id="js-messages"></pre>
+
+
+    <!-- <textarea id="their-id"></textarea> -->
+    <!-- <button id="make-call">発信</button><br> -->
+    <!-- <video id="their-video" width="320px" autoplay muted playsinline></video> -->
+    <div id="js-videos-container" class="videos-container">
+        <span id="vrm_parent"
+            style="border:solid 1px #eb6100;width:320px;height:240px;overflow:hidden;box-sizing:content-box; display:inline-block;"></span>
+    </div>
+    <div class="oneline">
+        <video id='input' width="320" height="240" autoplay muted playsinline
+            style="border:solid 1px black;box-sizing:content-box;display:inline-block;"></video>
+
+        <span style="position:relative;display:inline-block;">
+            <canvas id='output' width="320" height="240"
+                style="border:solid 1px black;box-sizing:content-box;"></canvas>
+            <span id='loadingicon' class="fa fa-spinner fa-spin"
+                style="position:absolute;font-size:100px;top:70px;left: 110px;display:none;"></span>
+        </span>
+        <p><canvas id="myCanvas"></canvas></p>
+    </div>
+    <script>
+        const peer = new Peer({
+            key: '5b35db5a-38a4-488d-aab0-6574e45187ff',
+            debug: 3
+        });
+
+        peer.on('open', () => {
+            document.getElementById('my-id').textContent = peer.id;
+        });
+
+        let localStream;
+
+        // 複数人会議
+        // js-local-video→vrm_parent
+        const localVideo = document.getElementById('vrm_parent');
+        // js-local-id→my-id
+        const localId = document.getElementById('my-id');
+        // js-videos-container→
+        const videosContainer = document.getElementById('js-videos-container');
+
+        const roomId = document.getElementById('js-room-id');
+        const messages = document.getElementById('js-messages');
+        const joinTrigger = document.getElementById('js-join-trigger');
+        const leaveTrigger = document.getElementById('js-leave-trigger');
+        //ここ追加
+        const localText = document.getElementById('js-local-text');
+        const sendTrigger = document.getElementById('js-send-trigger');
+        const nickname = document.getElementById('nickname');
+        //ここまで追加
+
+        joinTrigger.addEventListener('click', () => {
+            const room = peer.joinRoom(roomId.value, {
+                mode: 'sfu',
+                stream: localStream,
+            });
+            roomId.disabled = true;
+            nickname.disabled = true;
+
+            room.on('open', () => {
+                messages.textContent += `===You joined===\n`;
+                room.send(`===${nickname.value} joined===\n`);
+            });
+
+            room.on('peerJoin', peerId => {
+                messages.textContent += `===${peerId} joined===\n`;
+
+            });
+
+            // ここから変更点
+
+            room.on('data', ({ data, src }) => {
+                // Show a message sent to the room and who sent
+                messages.textContent += `${src} ${data}\n`;
+            });
+
+            sendTrigger.addEventListener('click', onClickSend);
+
+            function onClickSend() {
+                // Send message to all of the peers in the room via websocket
+                room.send(`${nickname.value}: ${localText.value}`);
+
+                messages.textContent += `${nickname.value}: ${localText.value}\n`;
+                localText.value = '';
+            }
+
+            // ここまで変更点
+
+            room.on('stream', async stream => {
+                const remoteVideo = document.createElement('video');
+                remoteVideo.style.height = '240px';
+                remoteVideo.srcObject = stream;
+                remoteVideo.playsInline = true;
+                remoteVideo.setAttribute('data-peer-id', stream.peerId);
+                videosContainer.append(remoteVideo);
+
+                await remoteVideo.play().catch(console.error);
+            });
+
+            room.on('peerLeave', peerId => {
+                const remoteVideo = videosContainer.querySelector(`[data-peer-id="${peerId}"]`);
+                remoteVideo.srcObject.getTracks().forEach(track => {
+                    track.stop();
+                });
+                remoteVideo.srcObject = null;
+                remoteVideo.remove();
+
+                messages.textContent += `===${peerId} left===\n`;
+            });
+
+            room.once('close', () => {
+                room.send(`===${nickname.value} left===\n`);
+                messages.textContent += '===You left ===\n';
+                const remoteVideos = videosContainer.querySelectorAll('[data-peer-id]');
+                Array.from(remoteVideos)
+                    .forEach(remoteVideo => {
+                        remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+                        remoteVideo.srcObject = null;
+                        remoteVideo.remove();
+                    });
+            });
+
+            leaveTrigger.addEventListener('click', () => {
+                room.close();
+                roomId.disabled = false;
+                nickname.disabled = false;
+            }, { once: true });
+
+            
+        });
+        
+        function pressEnter(code) {
+                //エンターキー押下なら
+                if (13 === code) {
+                    sendTrigger.click();
+                }
+            }
+        
+    </script>
+</body>
+
+</html>
