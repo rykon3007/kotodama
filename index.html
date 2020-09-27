@@ -139,11 +139,11 @@
 
             room.on('open', () => {
                 messages.textContent += `===You joined===\n`;
-                room.send(`${nickname.value} in!!\n`);
             });
 
             room.on('peerJoin', peerId => {
                 messages.textContent += `===${peerId} joined===\n`;
+                room.send(`${nickname.value} Join!!`);
 
             });
 
@@ -151,9 +151,7 @@
 
             room.on('data', ({ data, src }) => {
                 // Show a message sent to the room and who sent
-                console.log(src);
-                src = src.match(/\((.+)\)/)[1];
-                messages.textContent += `${src} ${data}\n`;
+                messages.textContent += `${data}\n`;
             });
 
             sendTrigger.addEventListener('click', onClickSend);
